@@ -8,7 +8,7 @@
 
 The [ext-auth repository](https://github.com/modelcontextprotocol/ext-auth) contains official MCP extensions that add authorization capabilities beyond the core MCP specification. These extensions address specific real-world scenarios where the standard OAuth 2.0 authorization code flow isn't the right fit.
 
-> **[modelcontextprotocol/ext-auth](https://github.com/modelcontextprotocol/ext-auth)**
+> [card] [modelcontextprotocol/ext-auth](https://github.com/modelcontextprotocol/ext-auth)
 >
 > Source code, specifications, and reference implementations for MCP
 > authorization extensions.
@@ -26,12 +26,12 @@ The ext-auth extensions address these gaps.
 
 ## Available extensions
 
-> **[OAuth Client Credentials](https://modelcontextprotocol.io/extensions/auth/oauth-client-credentials.md)**
+> [card] [OAuth Client Credentials](https://modelcontextprotocol.io/extensions/auth/oauth-client-credentials.md)
 >
 > Machine-to-machine authentication using the OAuth 2.0 client credentials
 > flow. No user interaction required.
 
-> **[Enterprise-Managed Authorization](https://modelcontextprotocol.io/extensions/auth/enterprise-managed-authorization.md)**
+> [card] [Enterprise-Managed Authorization](https://modelcontextprotocol.io/extensions/auth/enterprise-managed-authorization.md)
 >
 > Centralized access control via enterprise identity providers. Employees
 > access MCP servers through their organization's IdP.
@@ -53,4 +53,4 @@ Authorization extension support varies by client. See the [client matrix](https:
 
 ## Specification
 
-Both extensions are specified in the [ext-auth repository](https://github.com/modelcontextprotocol/ext-auth/tree/main/specification/draft). They use the standard MCP [extension negotiation](https://modelcontextprotocol.io/extensions/overview.md#negotiation) mechanism: clients declare support in the `extensions` field of the `io.modelcontextprotocol/clientCapabilities` they send in each request's `_meta`, and servers advertise theirs in the capabilities returned by [`server/discover`](https://modelcontextprotocol.io/specification/draft/server/discover).
+Both extensions are specified in the [ext-auth repository](https://github.com/modelcontextprotocol/ext-auth/tree/main/specification/stable). They use the standard MCP [extension negotiation](https://modelcontextprotocol.io/extensions/overview.md#negotiation) mechanism: clients declare support in the `extensions` field of the `io.modelcontextprotocol/clientCapabilities` they send in each request's `_meta`, and servers advertise theirs in the capabilities returned by [`server/discover`](https://modelcontextprotocol.io/specification/draft/server/discover).
