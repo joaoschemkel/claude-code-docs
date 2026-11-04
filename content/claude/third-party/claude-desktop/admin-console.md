@@ -75,18 +75,24 @@ Sign in at [claude.ai](https://claude.ai), switch to the organization, and open 
 
 ### Start from an existing configuration file
 
-If you already deploy Claude Desktop with an MDM profile, a bootstrap server, or a configuration built in the app, upload that configuration instead of entering each setting again. On the **Connection** page, click **Import configuration…**, then choose a `.json` file or paste the JSON. The console reads JSON in any of these forms:
+If you already deploy Claude Desktop with an MDM profile, a bootstrap server, or a configuration built in the app, upload that configuration instead of entering each setting again. On the **Connection** page, click **Import configuration…**, then choose a `.json` file or paste the JSON. Get the JSON from the place where your configuration is today:
 
-* The file that Claude Desktop saves from **Developer → Configure Third-Party Inference… → Export → JSON config**, on macOS or Windows. Export it on the workstation where you built the configuration. On a device whose MDM profile or registry policy sets the Claude Desktop configuration, that window is read-only and doesn't offer this export.
-* The JSON that your bootstrap server returns.
-* A macOS `.mobileconfig` profile converted to JSON with `plutil -convert json -o config.json YourProfile.mobileconfig`.
-* A Linux `/etc/claude-desktop/managed-settings.json` file.
+* **Configuration built in Claude Desktop**: on the macOS or Windows workstation where you built it, go to **Developer → Configure Third-Party Inference… → Export → JSON config**. If an MDM profile or registry policy sets the Claude Desktop configuration on a device, the configuration window is read-only and its **Export** menu doesn't offer **JSON config**. Get the JSON from the policy or profile instead.
+* **Windows registry policy**: the console doesn't read `.reg` files. On a device that has the policy, run this command in PowerShell, in a folder that doesn't sync to a cloud drive:
 
-For a Windows fleet, use the JSON config export, because the console doesn't read `.reg` files or registry policy.
+  ```powershell PowerShell wrap theme={null}
+  Get-ItemProperty 'HKLM:\SOFTWARE\Policies\Claude' | Select-Object * -ExcludeProperty PS* | ConvertTo-Json | Set-Content -Encoding UTF8 claude-policy.json
+  ```
+
+  The command writes the policy's values to `claude-policy.json` in the current folder. If PowerShell can't find the path, or writes no file, replace `HKLM:` with `HKCU:` in the command to read user policy. The file holds every value in plain text, including any credential that the policy sets, so delete it after the upload.
+* **macOS `.mobileconfig` profile**: in Terminal on a Mac, run `plutil -convert json -o config.json YourProfile.mobileconfig` to convert the profile to JSON. For a signed profile, first run `security cms -D -i SignedProfile.mobileconfig -o YourProfile.mobileconfig` to remove the signature.
+* **Bootstrap server**: use the JSON that your server returns
+* **Linux device**: use the `/etc/claude-desktop/managed-settings.json` file
+* **Another source**: write the JSON yourself. Put the keys at the top level, with names exactly as in the [configuration reference](https://claude.com/docs/third-party/claude-desktop/configuration.md).
 
 The console fills in the matching settings and lists anything in the file that it can't store, such as credentials, bootstrap keys, and values that are set automatically from your organization, like the display name. It then shows every change against the saved configuration, and replaces the configuration when you click **Replace configuration**. If the connection in the file can't be stored, for example because it relies on an API key or token in the file, the console keeps your saved connection instead.
 
-If the file was exported from Claude Desktop, check the **Automatically import earlier third-party sessions** switch on the **Capabilities** page after the upload. The exported file can mark this switch as off even if nobody turned it off, and the console keeps the value from the file.
+If the configuration was built in Claude Desktop, check the **Automatically import earlier third-party sessions** switch on the **Capabilities** page after the upload. A configuration built there can mark this switch as off even if nobody turned it off, and the console keeps the value from the file.
 
 To move the devices and users of an existing fleet to this configuration, see [Migrate an existing fleet to the admin console](#migrate-an-existing-fleet-to-the-admin-console).
 
@@ -279,8 +285,9 @@ Before the first user signs in, confirm the following:
 * You have saved a configuration that includes the inference provider, as described under [Configure Claude Desktop](#configure-claude-desktop)
 * Single sign-on is connected, if you use it, and the users you want on this deployment are invited or provisioned, as described under [Connect your identity provider](#connect-your-identity-provider)
 * Devices run the latest Claude Desktop release, installed as described in [Installation and setup](https://claude.com/docs/third-party/claude-desktop/installation.md)
-* Devices carry no MDM-delivered Claude Desktop configuration other than the [app-behavior keys](https://claude.com/docs/third-party/claude-desktop/mdm.md#update-keys-and-managed-precedence) (the update, configuration re-check, relaunch window, and network proxy keys). For a device that keeps a managed profile or registry policy with any other key, see [Devices with a managed profile](#devices-with-a-managed-profile).
+* Devices carry no MDM-delivered Claude Desktop configuration other than the [app-behavior keys](https://claude.com/docs/third-party/claude-desktop/mdm.md#update-keys-and-managed-precedence) (the update, configuration re-check, relaunch window, and network proxy keys) and [`forceLoginOrgUUID`](#keep-a-device-on-its-managed-profile). For a device that keeps a managed profile or registry policy with any other key, see [Devices with a managed profile](#devices-with-a-managed-profile).
 * Devices can reach `api.anthropic.com` at every launch and while the app runs, and `claude.ai`, `hcaptcha.com`, and `*.hcaptcha.com` when users sign in, in addition to the hosts on [Telemetry and egress](https://claude.com/docs/third-party/claude-desktop/telemetry.md)
+* You have added the device, network, and provider controls that you want, as described under [Limit Claude Desktop to your organization](#limit-claude-desktop-to-your-organization)
 
 A device picks up the configuration from the admin console the first time the user signs in to Claude in the app. Walk through it on a test device first.
 
@@ -304,6 +311,16 @@ If something looks wrong, **Help → Troubleshooting → Generate Diagnostic Rep
 
 Give each user their own computer login. Claude Desktop keeps conversation history for each computer login and organization, not for each Claude account, and **Sign out** doesn't delete it. Members of your organization who share a computer login see each other's conversations. If people must share a login, ask each person to choose **Sign out** from the account menu when they finish, so that the next person signs in with their own Claude account.
 
+### Limit Claude Desktop to your organization
+
+The admin console alone doesn't keep a device on your organization's settings. The console delivers your settings to members who sign in to Claude Desktop. The app applies the settings on the device and stores the sign-in in the user's own [application data directory](https://claude.com/docs/third-party/claude-desktop/data-storage.md#where-data-lives). A user can stop using your settings, for example by signing out, deleting the app data, or setting up their own inference provider in the app.
+
+These controls still apply when a user stops using your settings:
+
+* **Device management**: deploy `forceLoginOrgUUID` with your Claude organization's ID in a machine-level managed profile, as described under [Keep a device on its managed profile](#keep-a-device-on-its-managed-profile). The app then ignores an inference provider that a user sets up in the app and limits standard Claude Desktop sign-in to your organization. You continue to manage settings in the console.
+* **Network**: at your firewall or secure web gateway, block inference endpoints other than your provider's. The app needs `api.anthropic.com` and `claude.ai`, so limit those hosts to your Claude organizations, including your admin console organization, with [tenant restrictions](https://support.claude.com/en/articles/13198485-enforce-network-level-access-control-with-tenant-restrictions).
+* **Inference provider**: in your provider's access policies, set who can send model requests to your provider from any app or configuration.
+
 ### Users in more than one Claude organization
 
 A user's Claude account can belong to your deployment's organization and to other Claude organizations, and the user can move between them in Claude Desktop. When such a user signs in, the app opens in their other organization and asks whether to switch to yours, with **Switch and restart** and **Not now** buttons. A user who chooses **Not now** isn't asked again on that device and can switch later by choosing your organization from the account menu. Each move into or out of your organization restarts the app, because third-party mode runs as a separate app configuration. To go back, the user chooses **Sign out** and signs in to Claude again after the restart. From Claude Desktop 1.49585.0, they can instead pick their other organization from the account menu, which also restarts the app and asks them to sign in.
@@ -318,7 +335,7 @@ To keep personal accounts and other organizations' accounts out of Claude Deskto
 
 > [!WARNING]
 >
-> The person at the device can [remove the block](#unblock-other-accounts-in-claude-desktop), so the switch doesn't enforce sign-in. To enforce sign-in to your organization, deploy [`forceLoginOrgUUID`](#keep-a-device-on-its-managed-profile) through device management. On a device that has the key, the key's value applies instead of the switch and the **Allowed organizations** list.
+> The person at the device can [remove the block](#unblock-other-accounts-in-claude-desktop), so the switch doesn't enforce sign-in. To enforce sign-in to your organization, deploy [`forceLoginOrgUUID`](#keep-a-device-on-its-managed-profile) through device management. On a device that has the key, the key's value applies instead of the switch and the **Allowed organizations** list. On a device whose managed profile [restricts the deployment mode](https://claude.com/docs/third-party/claude-desktop/mdm.md#restrict-a-device-to-one-deployment-mode), the switch and the list don't apply, so set `forceLoginOrgUUID` in that profile.
 
 Check what the block covers:
 
@@ -383,7 +400,7 @@ Update devices to Claude Desktop 2.42304.0 or later. Earlier releases migrate fe
 
 **4. Remove the managed profile**
 
-Remove the Claude Desktop configuration profile or registry policy, including one that carries only bootstrap keys. You can keep a profile that sets only the [app-behavior keys](https://claude.com/docs/third-party/claude-desktop/mdm.md#update-keys-and-managed-precedence).
+Remove the Claude Desktop configuration profile or registry policy, including one that carries only bootstrap keys. You can keep a profile that sets only the [app-behavior keys](https://claude.com/docs/third-party/claude-desktop/mdm.md#update-keys-and-managed-precedence) and [`forceLoginOrgUUID`](#keep-a-device-on-its-managed-profile).
 
 * **Devices that keep a profile with any other key**: see [Devices with a managed profile](#devices-with-a-managed-profile)
 * **Devices configured in the app**: the user signs out and chooses the Anthropic sign-in option, as described under [Single-machine setup](https://claude.com/docs/third-party/claude-desktop/installation.md#single-machine-setup)
@@ -425,7 +442,7 @@ To let users import their claude.ai conversations, and any local sessions that t
 
 ## Devices with a managed profile
 
-A managed profile is a macOS configuration profile, a Windows registry policy, or the Linux `/etc/claude-desktop/managed-settings.json` file, from [MDM](https://claude.com/docs/third-party/claude-desktop/mdm.md) or [bootstrap](https://claude.com/docs/third-party/claude-desktop/bootstrap.md) delivery. A device whose profile sets any key other than the [app-behavior keys](https://claude.com/docs/third-party/claude-desktop/mdm.md#update-keys-and-managed-precedence) uses the profile's configuration until its user moves the device to the admin console's configuration. Where you can, remove such a profile before users sign in, as described under [Migrate an existing fleet to the admin console](#migrate-an-existing-fleet-to-the-admin-console).
+A managed profile is a macOS configuration profile, a Windows registry policy, or the Linux `/etc/claude-desktop/managed-settings.json` file, from [MDM](https://claude.com/docs/third-party/claude-desktop/mdm.md) or [bootstrap](https://claude.com/docs/third-party/claude-desktop/bootstrap.md) delivery. A device whose profile sets any key other than the [app-behavior keys](https://claude.com/docs/third-party/claude-desktop/mdm.md#update-keys-and-managed-precedence) uses the profile's configuration until its user moves the device to the admin console's configuration. Where you can, remove every such key other than `forceLoginOrgUUID` before users sign in, as described under [Migrate an existing fleet to the admin console](#migrate-an-existing-fleet-to-the-admin-console).
 
 To prevent the move, or to allow it only for your organization, see [Keep a device on its managed profile](#keep-a-device-on-its-managed-profile). Before Claude Desktop 2.37337.0, the device uses the profile and ignores the admin console.
 
@@ -450,7 +467,7 @@ While a device whose profile sets any other key is on the admin console's config
 
 * The [network proxy keys](https://claude.com/docs/third-party/claude-desktop/network-proxy.md#pin-a-proxy-from-managed-configuration).
 * [`isLocalDevMcpEnabled`](https://claude.com/docs/third-party/claude-desktop/configuration#islocaldevmcpenabled) set to `false`, for local (stdio) servers in the console's managed MCP servers only. The app starts such a server only if the profile's own [`managedMcpServers`](https://claude.com/docs/third-party/claude-desktop/configuration#managedmcpservers) lists a local (stdio) server of the same name, and it uses the profile's command, arguments, and environment. The profile's value doesn't block local MCP servers that users add. To keep blocking them, turn off **Allow local MCP servers** on the console's **Connectors** page.
-* `disableDeploymentModeChooser` and `forceLoginOrgUUID`, as described under [Keep a device on its managed profile](#keep-a-device-on-its-managed-profile).
+* The keys described under [Keep a device on its managed profile](#keep-a-device-on-its-managed-profile).
 
 Other settings come from the console, including the inference provider, restrictions, telemetry, and the update, relaunch window, and re-check keys. The profile's values, and its bootstrap server's, don't apply even where the console leaves a setting unset. Before the app downloads the console's configuration at a launch, it applies [what it kept of the last download](#configuration-kept-on-devices), not the profile's values. That copy doesn't hold [`disableAutoUpdates`](https://claude.com/docs/third-party/claude-desktop/configuration#disableautoupdates), so until a download succeeds, neither the console's nor the profile's value blocks updates.
 
@@ -460,7 +477,7 @@ The app doesn't fall back to the profile's provider or server when it can't reac
 
 On Claude Desktop 2.37337.0 or later, a user who belongs to any organization that uses the admin console can move a device to that organization's configuration by signing in. The organization doesn't have to be yours. To prevent the move, or to allow it only for your organization, set one of these keys in the device's [managed profile](#devices-with-a-managed-profile):
 
-* **Prevent the move:** set [`disableDeploymentModeChooser`](https://claude.com/docs/third-party/claude-desktop/configuration#disabledeploymentmodechooser) to `true`. The app ignores the admin console, and the sign-in screen doesn't offer **Or sign in with Claude.ai**. A device that already moved returns to the profile at its next launch. Set the key in the profile itself, not only in your bootstrap server's response.
+* **Prevent the move:** set `deploymentMode` to `3p` in a profile that says what the app connects to, or to `1p` in a profile that leaves the device on standard Claude Desktop. The app ignores the admin console, and a device that already moved leaves the console's configuration at its next launch. Devices on versions before 4.16336.0 also need `disableDeploymentModeChooser`, as described under [Restrict a device to one deployment mode](https://claude.com/docs/third-party/claude-desktop/mdm.md#restrict-a-device-to-one-deployment-mode).
 * **Allow only your organization:** set [`forceLoginOrgUUID`](https://claude.com/docs/cowork/hipaa-setup#what-each-claude-desktop-key-does) to your Claude organization's ID. This ID isn't [`deploymentOrganizationUuid`](https://claude.com/docs/third-party/claude-desktop/configuration#deploymentorganizationuuid), which is a UUID you generate. Devices already on your organization's admin console configuration stay on it. The app ignores the admin console configuration of any other organization and limits standard Claude Desktop sign-in on the device to your organization.
 
 You can use `forceLoginOrgUUID` to help prevent shadow IT, which here means people using personal Claude accounts or other organizations' accounts in Claude Desktop on work computers. A user who signs in to standard Claude Desktop with an account that isn't in your organization sees a page that reads "This account is not approved by your enterprise admin" and can only log out.
@@ -478,7 +495,7 @@ For the macOS and Windows locations where the app reads a managed profile's keys
 
 > [!WARNING]
 >
-> On a device that uses the admin console, adding either key to a profile that sets only [app-behavior keys](https://claude.com/docs/third-party/claude-desktop/mdm.md#update-keys-and-managed-precedence) changes which settings apply. See [Which settings apply on a device with a managed profile](#which-settings-apply-on-a-device-with-a-managed-profile). With `disableDeploymentModeChooser` set to `true`, the profile becomes the device's whole configuration, and the device stops using the admin console. To require members who also belong to another organization to switch to yours, leave such a profile as it is and turn on [**Require this organization in Claude Desktop**](#users-in-more-than-one-claude-organization).
+> On a device that uses the admin console, adding one of these keys to a profile that sets only [app-behavior keys](https://claude.com/docs/third-party/claude-desktop/mdm.md#update-keys-and-managed-precedence) changes which settings apply. See [Which settings apply on a device with a managed profile](#which-settings-apply-on-a-device-with-a-managed-profile). With `deploymentMode` set to `3p` or `1p`, or `disableDeploymentModeChooser` set to `true`, the profile becomes the device's whole configuration, and the device stops using the admin console. To require members who also belong to another organization to switch to yours, leave such a profile as it is and turn on [**Require this organization in Claude Desktop**](#users-in-more-than-one-claude-organization).
 
 ## Remove users or return to MDM
 
@@ -496,7 +513,7 @@ To return a whole fleet to [MDM](https://claude.com/docs/third-party/claude-desk
 
 > [!WARNING]
 >
-> Keep `disableDeploymentModeChooser` (or, for standard Claude Desktop, `forceLoginOrgUUID`) in the profile. On Claude Desktop 2.37337.0 or later, without the key the device goes back to the admin console's configuration at its next launch, without asking the user. If the user's sign-in to your organization has expired or you removed the user, the app shows your organization's sign-in screen or a **Restart required** prompt instead.
+> Keep a key that [restricts the deployment mode](https://claude.com/docs/third-party/claude-desktop/mdm.md#restrict-a-device-to-one-deployment-mode) (or, for standard Claude Desktop, `forceLoginOrgUUID`) in the profile. On Claude Desktop 2.37337.0 or later, without the key the device goes back to the admin console's configuration at its next launch, without asking the user. If the user's sign-in to your organization has expired or you removed the user, the app shows your organization's sign-in screen or a **Restart required** prompt instead.
 >
 > A device that left the admin console's configuration on an earlier release goes back too, so add `disableDeploymentModeChooser` to the profile before devices update. A key that you add later takes effect at the device's next launch.
 
