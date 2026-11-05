@@ -4,7 +4,7 @@
 
 # Enterprise Managed Auth for connectors
 
-> Accept identity assertions from a customer's identity provider or Claude so users connect to your MCP server without an OAuth consent step.
+> Support auto-connect in Claude by accepting identity assertions from a customer's identity provider or from Claude, so users skip the OAuth consent step.
 
 > [!NOTE]
 >
@@ -12,7 +12,9 @@
 
 Enterprise Managed Auth (EMA) lets organizations connect their users to your MCP server without sending each user through an OAuth consent screen. Claude presents your authorization server with an identity assertion instead: a signed JSON Web Token (JWT) issued by [the customer's identity provider or by Claude](#who-issues-the-identity-assertion). Your authorization server validates the assertion and returns an access token.
 
-As a connector developer, you [make your authorization server accept and validate the assertion](#authorization-server-requirements), [test your implementation](#test-your-implementation), and [give customer administrators the settings and documentation they need](#support-customer-administrators).
+Claude calls this feature auto-connect, for identity provider-issued and Claude-issued assertions alike. The connector directory labels listings marked as supporting it **Auto-connect**.
+
+To support auto-connect, you [make your authorization server accept and validate the assertion](#authorization-server-requirements), [test your implementation](#test-your-implementation), and [give customer administrators the settings and documentation they need](#support-customer-administrators).
 
 ## Understand how Enterprise Managed Auth works
 
@@ -36,7 +38,7 @@ The token format and the exchange at your token endpoint are the same in both ca
 Before adding Enterprise Managed Auth, make sure the following are already in place:
 
 * Your MCP server implements [MCP authorization](https://modelcontextprotocol.io/specification/draft/basic/authorization), including Protected Resource Metadata (PRM) discovery. See the [authentication guide](https://claude.com/docs/connectors/building/authentication.md) for Claude-specific requirements
-* Your authorization server registers Claude using either [Anthropic-held client credentials](https://claude.com/docs/connectors/building/authentication.md#anthropic-held-client-credentials) or a [Client ID Metadata Document](https://claude.com/docs/connectors/building/authentication.md#dcr-and-cimd-details)
+* Your authorization server registers Claude using either a client that Anthropic set up for your server's URL, as [Which credentials Claude uses when several are set](https://claude.com/docs/connectors/building/authentication.md#which-credentials-claude-uses-when-several-are-set) describes, or a [Client ID Metadata Document](https://claude.com/docs/connectors/building/authentication.md#dcr-and-cimd-details). Enterprise Managed Auth sign-ins don't use a client ID and secret that you entered in the developer portal. If that is how Claude is registered with you, email `mcp-review@anthropic.com` with your listing's name and its exact server URLs before you ask to have your listing marked as supporting Enterprise Managed Auth, and don't put the secret in the email
 
 Enterprise Managed Auth works with [lazy authentication](https://claude.com/docs/connectors/building/lazy-authentication.md). When your MCP server answers a tool call with `401 Unauthorized` and the user's organization has Enterprise Managed Auth configured for your connector, Claude runs the exchange and retries the call instead of showing the **Connect** card.
 
@@ -99,7 +101,17 @@ grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer
 &resource=https://mcp.example.com
 ```
 
-Client authentication is left out of this example. The `client_id` is the value Claude is registered under at your authorization server, which for a Client ID Metadata Document is the document's URL. If that client has a secret or key, require it on this request. Answer at the `token_endpoint` URL itself, because Claude doesn't follow redirects on this request.
+Client authentication is left out of this example. Answer at the `token_endpoint` URL itself, because Claude doesn't follow redirects on this request. The `client_id` is the value Claude is registered under at your authorization server, which for a Client ID Metadata Document is the document's URL. If that client has a secret or key, require it on this request:
+
+* **Client secret**: Claude sends the secret in the request body, so accept `client_secret_post` for this client
+* **Signed client assertion**: if Claude is registered with you through its Client ID Metadata Document and your authorization server metadata lists `private_key_jwt` in `token_endpoint_auth_methods_supported`, Claude can send this request as a second client, `https://claude.ai/oauth/mcp-oauth-client-metadata/confidential_client`, with a signed client assertion. Accept that `client_id` as well as the public document's URL, and verify the client assertion with the keys at the `jwks_uri` in the `confidential_client` document
+
+The **Client** check in [Validate the identity assertion](#validate-the-identity-assertion) compares the assertion's `client_id` claim with this request's `client_id`:
+
+* **Claude-issued**: the claim names the client that sends this request
+* **Identity provider-issued**: the claim is the client ID that the customer's administrator registered for your connector in their identity provider. Claude's managed authorization setup gives the identity provider's setup the client ID that Claude presents on this request, so the two values should match when the administrator registers your connector through it. An administrator who registers your connector another way must enter the client ID that Claude presents on this request, so name it in your setup documentation
+
+Adding or removing `private_key_jwt` in `token_endpoint_auth_methods_supported` changes which client Claude presents through its metadata document. After customers are set up, that change can make their identity provider-issued sign-ins fail the **Client** check until each administrator runs Claude's managed authorization setup again or enters the new client ID in their identity provider. Tell administrators before you make it.
 
 A Claude-issued request always carries the `resource` parameter ([Resource Indicators, RFC 8707](https://www.rfc-editor.org/rfc/rfc8707)), set to the `resource` in your Protected Resource Metadata when that is your MCP server's URL or a parent of it, and otherwise to your MCP server's URL. An identity provider-issued request carries it whenever the customer's identity provider supports forwarding it. Accept the request whether or not `resource` is present, and use it for audience binding when it is.
 
@@ -220,7 +232,7 @@ Check each of these cases before you launch:
 
 ## Support customer administrators
 
-A customer's administrator turns on Enterprise Managed Auth for their organization.
+A customer's administrator turns on Enterprise Managed Auth for their organization. For a connector added from the directory, an Owner or Primary Owner clicks **Set up auto-connect** on its row in [**Organization settings > Connectors**](https://claude.ai/admin-settings/connectors), which opens the managed authorization setup. Claude's guide for administrators is [Auto-connect your organization's apps to Claude](https://support.claude.com/en/articles/15537633-auto-connect-your-organization-s-apps-to-claude).
 
 ### Admin settings in your product
 
