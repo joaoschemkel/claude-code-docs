@@ -16,6 +16,8 @@ Projects are available to all users, including those with free Claude accounts. 
 
   - **Share with your broader organization:** Everyone in your organization can view and use this project (where enabled by administrators).
 
+5. If you're on an Enterprise plan and your organization requires project tags (beta), set a value for each required tag. See **[Track spend by cost code with project tags](https://support.claude.com/en/articles/18251257-track-spend-by-project-with-tags)**. Tag names and values are visible to all users in your organization, so keep sensitive information out of them.
+
 Once your project is set up, you can initiate chats with Claude within the project.
 
 ## Add content to project knowledge
@@ -60,7 +62,7 @@ If you're on a Team or Enterprise plan, you can share projects with other users 
 
   - **Can view:** Members can see project contents, knowledge, and instructions, and chat within the project, but cannot edit it.
 
-  - **Can edit:** Members can modify project instructions and knowledge, update member settings, and actively contribute to the project.
+  - **Can edit:** Members can modify project instructions and knowledge, update member settings, add project tags (beta) on Enterprise plans, and actively contribute to the project.
 
 5. Click "Share" to send invitations.
 
@@ -104,15 +106,15 @@ Starring a project allows for quick access from your projects and chats list, vi
 
 You can move a standalone chat into a project by clicking on the dropdown arrow next to the chat name, then “Add to project”:
 
-![](https://downloads.intercomcdn.com/i/o/lupk8zyo/1784190248/0f19c8de18b494a27be252fdfaff/d4e7a5c5-25f5-4623-862b-c593d2dc0b39?expires=1793952000&amp;signature=23a39b1a3fe22fc45b3701105ff4e36532621918d1b689a2efb5e5e7b3ceebf8&amp;req=dScvEsh3nYNbUfMW1HO4zQABaGJlT6IVBSXNVFXQ%2FVG%2BUFLSsddmdVypLlsA%0AoUAMMR%2FrqfpO2Vvd9j4%3D%0A)
+![](https://downloads.intercomcdn.com/i/o/lupk8zyo/1784190248/0f19c8de18b494a27be252fdfaff/d4e7a5c5-25f5-4623-862b-c593d2dc0b39?expires=1794117600&amp;signature=412decac4d19d2280444510e0a5a3bd1e5b8e8446ac143d5c36aaf6e9460dd72&amp;req=dScvEsh3nYNbUfMW3nq%2BgXuLDiqr7zQwW%2FkvfZakkxE2eIUhlN0IEr0l9vL4%0Af19NtbeVgY4IxXsZTn80BRdzYGY%3D%0A)
 
 Browse or search for the correct project in the **Move chat** modal that appears, then click on it to move the chat.
 
-![](https://downloads.intercomcdn.com/i/o/lupk8zyo/1784190951/34dc256ccd4c0cf74976f31062e6/55365cf2-059d-41b2-ac95-4b00c4389a76?expires=1793952000&amp;signature=6281d5ff82374cef7d5a1e874a216a66d1673096cebaf933ba6c4f7b21cdc356&amp;req=dScvEsh3nYhaWPMW1HO4zSMECyO5zgsBgYbpTjViBxBXEV2i3OjrzGN9dOWL%0AELM5SwrFioQ6NKlWSKw%3D%0A)
+![](https://downloads.intercomcdn.com/i/o/lupk8zyo/1784190951/34dc256ccd4c0cf74976f31062e6/55365cf2-059d-41b2-ac95-4b00c4389a76?expires=1794117600&amp;signature=ad3bcbca7cc06896aae4c25f6b120757c1912211c97492621745392a8608dcb1&amp;req=dScvEsh3nYhaWPMW3nq%2BgaHJV1YEl4wd8i2LKq4iewpmjjMO77GoKVVp9U1d%0ArmvHTgPYF3N78YvOSQLN3fUrca8%3D%0A)
 
 You can also remove chats from projects, or move them between projects, using the same dropdown menu within the chat:
 
-![](https://downloads.intercomcdn.com/i/o/lupk8zyo/1784185682/8625eac15b9fa452f148a6c47250/c53a1bc4-a991-4684-a789-5447ed789d35?expires=1793952000&amp;signature=ab5113e164b0a728be2599ca64152cad5335a972fe4a60316a8762d5507ccc27&amp;req=dScvEsh2mIdXW%2FMW1HO4zb6DufQlC0cKS2r1%2FGRlqOSQ9w15x%2FUacjH9knB%2B%0AV%2FjGZH5gP5aZMNlMOkY%3D%0A)
+![](https://downloads.intercomcdn.com/i/o/lupk8zyo/1784185682/8625eac15b9fa452f148a6c47250/c53a1bc4-a991-4684-a789-5447ed789d35?expires=1794117600&amp;signature=f1811798fa93979cee1739f96f8cb65d3f05db87e3c7fd444aea24c6a37d8e96&amp;req=dScvEsh2mIdXW%2FMW3nq%2BgcRackgj6V2uDYxgXkUx%2BGFV0x11XvpCvK2b%2FPHQ%0AVhg9yED14Ysk7HWfyqBwAnL5Aew%3D%0A)
 
 ---
 
